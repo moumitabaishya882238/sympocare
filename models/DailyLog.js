@@ -23,18 +23,66 @@ const dailyLogSchema = new mongoose.Schema({
             },
         },
     ],
-    waterIntake: {
-        type: Number, // in cups or ml
-        default: 0,
+    mood: {
+        type: String,
+        enum: ['Happy', 'Good', 'Okay', 'Tired', 'Sad', 'Anxious'],
+        default: 'Okay',
+    },
+    feelingComparison: {
+        type: String,
+        enum: ['Better', 'Same', 'Worse'],
+        default: 'Same',
     },
     sleepHours: {
         type: Number,
         default: 0,
     },
-    mood: {
+    sleepQuality: {
         type: String,
-        enum: ['Happy', 'Good', 'Okay', 'Tired', 'Sad', 'Anxious'],
-        default: 'Okay',
+        enum: ['Excellent', 'Good', 'Fair', 'Poor'],
+        default: 'Good',
+    },
+    waterIntake: {
+        type: Number,
+        default: 0,
+    },
+    foodDescription: {
+        type: String,
+    },
+    fastFoodConsumed: {
+        type: Boolean,
+        default: false,
+    },
+    skippedMeals: {
+        type: Boolean,
+        default: false,
+    },
+    stressLevel: {
+        type: String,
+        enum: ['Low', 'Moderate', 'High'],
+        default: 'Moderate',
+    },
+    feltTired: {
+        type: Boolean,
+        default: false,
+    },
+    physicalActivity: {
+        type: Boolean,
+        default: false,
+    },
+    sedentaryBehavior: {
+        type: Boolean,
+        default: false,
+    },
+    symptomsToday: [{
+        type: String,
+    }],
+    experiencingPain: {
+        type: Boolean,
+        default: false,
+    },
+    painDescription: {
+        type: String,
     },
     notes: {
         type: String,
