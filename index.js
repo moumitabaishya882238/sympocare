@@ -28,10 +28,14 @@ app.use(cors());
 // Route files
 const auth = require('./routes/auth');
 const logs = require('./routes/logs');
+const triage = require('./routes/triage');
+const reports = require('./routes/reports');
 
 // Mount routers
 app.use('/api/auth', auth);
 app.use('/api/logs', logs);
+app.use('/api/triage', triage);
+app.use('/api/reports', reports);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

@@ -14,10 +14,10 @@ router.post('/', protect, async (req, res) => {
 
         // Automatically categorize each meal
         if (meals && Array.isArray(meals)) {
-            meals = meals.map(meal => ({
+            meals = await Promise.all(meals.map(async (meal) => ({
                 ...meal,
-                category: categorizeFood(meal.foodName)
-            }));
+                category: await categorizeFood(meal.foodName)
+            })));
         }
 
         // Calculate score
@@ -116,6 +116,109 @@ router.get('/analysis', protect, async (req, res) => {
             success: true,
             count: logs.length,
             data: analysis
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// @desc    Get dashboard summary
+// @route   GET /api/logs/summary
+// @access  Private
+router.get('/summary', protect, async (req, res) => {
+    try {
+        const SymptomLog = require('../models/SymptomLog');
+
+        // 1. Get today's log
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const todayLog = await DailyLog.findOne({
+            user: req.user.id,
+            date: { $gte: startOfDay, $lte: endOfDay }
+        });
+
+        // 2. Get 7-day logs for trend analysis
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const weeklyLogs = await DailyLog.find({
+            user: req.user.id,
+            date: { $gte: sevenDaysAgo }
+        }).sort('-date');
+
+        // 3. Get recent triage history
+        const recentTriage = await SymptomLog.find({ user: req.user.id })
+            .sort('-date')
+            .limit(3);
+
+        const analysis = detectPatterns(weeklyLogs);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                today: todayLog || { dailyScore: 0, meals: [], waterIntake: 0, sleepHours: 0, mood: 'Okay' },
+                analysis,
+                recentTriage,
+                weeklyStats: weeklyLogs.length
+            }
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// @desc    Get 14-day stats for trends
+// @route   GET /api/logs/stats/trends
+// @access  Private
+router.get('/stats/trends', protect, async (req, res) => {
+    try {
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        fourteenDaysAgo.setHours(0, 0, 0, 0);
+
+        const logs = await DailyLog.find({
+            user: req.user.id,
+            date: { $gte: fourteenDaysAgo }
+        }).sort('date');
+
+        // Create a map of existing logs for easy lookup
+        const logMap = {};
+        logs.forEach(log => {
+            const dateStr = log.date.toISOString().split('T')[0];
+            logMap[dateStr] = log;
+        });
+
+        // Generate full 14-day sequence to avoid gaps in charts
+        const trendData = [];
+        for (let i = 0; i < 14; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - (13 - i)); // From 13 days ago to today
+            const dateStr = d.toISOString().split('T')[0];
+
+            if (logMap[dateStr]) {
+                trendData.push({
+                    date: dateStr,
+                    score: logMap[dateStr].dailyScore,
+                    sleep: logMap[dateStr].sleepHours,
+                    water: logMap[dateStr].waterIntake,
+                    mood: logMap[dateStr].mood
+                });
+            } else {
+                trendData.push({
+                    date: dateStr,
+                    score: 0,
+                    sleep: 0,
+                    water: 0,
+                    mood: 'None'
+                });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: trendData
         });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });

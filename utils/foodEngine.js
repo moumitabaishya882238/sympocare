@@ -6,25 +6,31 @@ const foodKeywords = {
     healthy: [
         'salad', 'oatmeal', 'fruit', 'vegetable', 'apple', 'banana', 'broccoli',
         'chicken breast', 'fish', 'salmon', 'quinoa', 'brown rice', 'eggs',
-        'spinach', 'kale', 'nuts', 'almonds', 'yogurt', 'water', 'smoothie'
+        'spinach', 'kale', 'nuts', 'almonds', 'yogurt', 'water', 'smoothie',
+        'sprouts', 'oats', 'muesli', 'green tea', 'avocado', 'tofu', 'paneer tikka',
+        'dal', 'roti', 'idli', 'dosa', 'sambar', 'vegetable soup', 'curd', 'milk'
     ],
     unhealthy: [
         'burger', 'pizza', 'fries', 'soda', 'coke', 'pepsi', 'cake', 'cookie',
         'donut', 'fried', 'ice cream', 'candy', 'chocolate', 'chips', 'beer',
-        'alcohol', 'white bread', 'syrup', 'hot dog', 'bacon'
+        'alcohol', 'white bread', 'syrup', 'hot dog', 'bacon', 'noodle', 'maggi',
+        'samosa', 'pakora', 'puri', 'paratha', 'butter chicken', 'sweet', 'pastry'
     ],
     moderate: [
-        'pasta', 'beef', 'steak', 'sandwich', 'cheese', 'milk', 'juice',
-        'potato', 'rice', 'honey', 'butter', 'pork'
+        'pasta', 'beef', 'steak', 'sandwich', 'cheese', 'juice',
+        'potato', 'rice', 'honey', 'butter', 'pork', 'chicken', 'mutton',
+        'biryani', 'curry', 'egg curry', 'subji', 'upma', 'poha', 'bread'
     ]
 };
 
+const { categorizeFoodAI } = require('./gemini');
+
 /**
- * Categorizes a food name based on keywords
+ * Categorizes a food name based on keywords or AI fallback
  * @param {string} foodName 
  * @returns {string} Category: Healthy, Moderate, Unhealthy, or Unknown
  */
-exports.categorizeFood = (foodName) => {
+exports.categorizeFood = async (foodName) => {
     if (!foodName) return 'Unknown';
 
     const name = foodName.toLowerCase();
@@ -44,7 +50,9 @@ exports.categorizeFood = (foodName) => {
         return 'Moderate';
     }
 
-    return 'Unknown';
+    // FALLBACK TO AI
+    const aiCategory = await categorizeFoodAI(foodName);
+    return aiCategory;
 };
 
 /**
