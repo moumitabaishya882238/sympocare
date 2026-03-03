@@ -10,7 +10,25 @@ const router = express.Router();
 // @access  Private
 router.post('/', protect, async (req, res) => {
     try {
-        let { meals, waterIntake, sleepHours, mood, notes } = req.body;
+        let {
+            meals,
+            waterIntake,
+            sleepHours,
+            mood,
+            notes,
+            feelingComparison,
+            sleepQuality,
+            foodDescription,
+            fastFoodConsumed,
+            skippedMeals,
+            stressLevel,
+            feltTired,
+            physicalActivity,
+            sedentaryBehavior,
+            symptomsToday,
+            experiencingPain,
+            painDescription
+        } = req.body;
 
         // Automatically categorize each meal
         if (meals && Array.isArray(meals)) {
@@ -35,25 +53,40 @@ router.post('/', protect, async (req, res) => {
             date: { $gte: startOfDay, $lte: endOfDay },
         });
 
+        const updateData = {
+            meals,
+            waterIntake,
+            sleepHours,
+            mood,
+            notes,
+            feelingComparison,
+            sleepQuality,
+            foodDescription,
+            fastFoodConsumed,
+            skippedMeals,
+            stressLevel,
+            feltTired,
+            physicalActivity,
+            sedentaryBehavior,
+            symptomsToday,
+            experiencingPain,
+            painDescription,
+            dailyScore
+        };
+
         if (log) {
             // Update existing log
-            log.meals = meals || log.meals;
-            log.waterIntake = waterIntake !== undefined ? waterIntake : log.waterIntake;
-            log.sleepHours = sleepHours !== undefined ? sleepHours : log.sleepHours;
-            log.mood = mood || log.mood;
-            log.notes = notes || log.notes;
-            log.dailyScore = dailyScore;
+            Object.keys(updateData).forEach(key => {
+                if (updateData[key] !== undefined) {
+                    log[key] = updateData[key];
+                }
+            });
             await log.save();
         } else {
             // Create new log
             log = await DailyLog.create({
                 user: req.user.id,
-                meals,
-                waterIntake,
-                sleepHours,
-                mood,
-                notes,
-                dailyScore
+                ...updateData
             });
         }
 
@@ -153,12 +186,17 @@ router.get('/summary', protect, async (req, res) => {
             .sort('-date')
             .limit(3);
 
+        // 4. Get total log count for "Day X" display
+        const logCount = await DailyLog.countDocuments({ user: req.user.id });
+
         const analysis = detectPatterns(weeklyLogs);
 
         res.status(200).json({
             success: true,
             data: {
                 today: todayLog || { dailyScore: 0, meals: [], waterIntake: 0, sleepHours: 0, mood: 'Okay' },
+                hasLoggedToday: !!todayLog,
+                logCount: !!todayLog ? logCount : logCount + 1, // Next day count if not logged today
                 analysis,
                 recentTriage,
                 weeklyStats: weeklyLogs.length
