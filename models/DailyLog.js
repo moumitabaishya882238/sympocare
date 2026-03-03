@@ -33,7 +33,7 @@ const dailyLogSchema = new mongoose.Schema({
     },
     mood: {
         type: String,
-        enum: ['Great', 'Good', 'Okay', 'Bad', 'Terrible'],
+        enum: ['Happy', 'Good', 'Okay', 'Tired', 'Sad', 'Anxious'],
         default: 'Okay',
     },
     notes: {
